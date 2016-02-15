@@ -1,20 +1,26 @@
 package com.example.xyzreader.ui;
 
+import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.LoaderManager;
+import android.content.Context;
+import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v13.app.FragmentStatePagerAdapter;
+import android.support.v4.app.ShareCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
+import android.widget.ImageButton;
 
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
@@ -37,6 +43,7 @@ public class ArticleDetailActivity extends ActionBarActivity
     private MyPagerAdapter mPagerAdapter;
     private View mUpButtonContainer;
     private View mUpButton;
+    private ImageButton mFloatingActionButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,20 +58,35 @@ public class ArticleDetailActivity extends ActionBarActivity
         getLoaderManager().initLoader(0, null, this);
 
         mPagerAdapter = new MyPagerAdapter(getFragmentManager());
+        mFloatingActionButton = (ImageButton) findViewById(R.id.share_fab);
+        mFloatingActionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ArticleDetailFragment currentFrag = (ArticleDetailFragment) mPagerAdapter.getCurrentFragment();
+                startActivity(Intent.createChooser(ShareCompat.IntentBuilder.from(ArticleDetailActivity.this)
+                        .setType("text/plain")
+                        .setSubject(currentFrag.getmTitle())
+                        .setText(currentFrag.getmBody())
+                        .getIntent(), getString(R.string.action_share)));
+            }
+        });
+
         mPager = (ViewPager) findViewById(R.id.pager);
         mPager.setAdapter(mPagerAdapter);
         mPager.setPageMargin((int) TypedValue
                 .applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1, getResources().getDisplayMetrics()));
         mPager.setPageMarginDrawable(new ColorDrawable(0x22000000));
-
         mPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override
             public void onPageScrollStateChanged(int state) {
                 super.onPageScrollStateChanged(state);
                 mUpButton.animate()
                         .alpha((state == ViewPager.SCROLL_STATE_IDLE) ? 1f : 0f)
-                        .setDuration(300);
-            }
+                        .setDuration(100);
+                mFloatingActionButton.animate()
+                        .alpha((state == ViewPager.SCROLL_STATE_IDLE) ? 1f : 0f)
+                        .setDuration(100);
+                }
 
             @Override
             public void onPageSelected(int position) {
@@ -152,13 +174,22 @@ public class ArticleDetailActivity extends ActionBarActivity
     }
 
     private class MyPagerAdapter extends FragmentStatePagerAdapter {
+        private Fragment mCurrentFragment;
+
         public MyPagerAdapter(FragmentManager fm) {
             super(fm);
+        }
+
+        public Fragment getCurrentFragment() {
+            return mCurrentFragment;
         }
 
         @Override
         public void setPrimaryItem(ViewGroup container, int position, Object object) {
             super.setPrimaryItem(container, position, object);
+            if (getCurrentFragment() != object) {
+                mCurrentFragment = ((Fragment) object);
+            }
             ArticleDetailFragment fragment = (ArticleDetailFragment) object;
             if (fragment != null) {
                 mSelectedItemUpButtonFloor = fragment.getUpButtonFloor();
