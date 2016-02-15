@@ -263,10 +263,6 @@ public class ArticleDetailFragment extends Fragment implements
         return mTitle;
     }
 
-    public String getmAuthour() {
-        return mAuthour;
-    }
-
     public String getmBody() {
         return mBody;
     }
